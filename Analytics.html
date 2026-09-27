@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Analytics - Mooving CRM</title>
+
+<style>
+:root{
+  --bg:#f8fafc;
+  --card-bg:#ffffff;
+  --text:#0f172a;
+  --muted:#64748b;
+  --border:#e2e8f0;
+  --sidebar-bg:#0f172a;
+  --sidebar-txt:#f8fafc;
+  --sidebar-accent:#38bdf8;
+  --navy:#1f4e79;
+  --navy-dark:#163a5c;
+  --red:#e2131f;
+  --danger:#dc2626;
+  --success:#16a34a;
+  --warn:#d97706;
+}
+[data-theme="dark"]{
+  --bg:#0f172a;
+  --card-bg:#1e293b;
+  --text:#f8fafc;
+  --muted:#94a3b8;
+  --border:#334155;
+  --sidebar-bg:#090d16;
+  --navy:#38bdf8;
+  --navy-dark:#0284c7;
+}
+*{ margin:0; padding:0; box-sizing:border-box; font-family:'Segoe UI', system-ui, -apple-system, sans-serif; }
+body{ background:var(--bg); color:var(--text); display:flex; min-height:100vh; }
+
+.sidebar-overlay{ display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:99; }
+.app-sidebar{ width:260px; background:var(--sidebar-bg); color:var(--sidebar-txt); position:fixed; top:0; bottom:0; left:0; z-index:100; display:flex; flex-direction:column; transition:transform .3s ease; border-right:1px solid rgba(255,255,255,0.08); }
+.sidebar-header{ padding:24px 20px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.08); }
+.brand-title{ font-size:24px; font-weight:900; letter-spacing:1px; color:white; text-decoration:none; }
+.brand-title span{ color:var(--red); }
+.brand-badge{ font-size:10px; font-weight:800; background:var(--red); color:white; padding:2px 6px; border-radius:4px; text-transform:uppercase; }
+.sidebar-nav{ padding:20px 12px; flex:1; display:flex; flex-direction:column; gap:6px; overflow-y:auto; }
+.nav-item{ display:flex; align-items:center; gap:12px; padding:12px 16px; color:#94a3b8; text-decoration:none; font-size:14px; font-weight:600; border-radius:8px; transition:all .2s ease; cursor:pointer; border:none; background:none; width:100%; text-align:left; }
+.nav-item:hover{ background:rgba(255,255,255,0.06); color:white; }
+.nav-item.active{ background:linear-gradient(90deg, var(--navy), #2563eb); color:white; box-shadow:0 4px 12px rgba(37,99,235,0.3); }
+.nav-item .icon{ font-size:18px; width:22px; text-align:center; }
+.sidebar-footer{ padding:16px; border-top:1px solid rgba(255,255,255,0.08); display:flex; flex-direction:column; gap:12px; }
+.user-profile-chip{ display:flex; align-items:center; gap:10px; padding:8px 10px; background:rgba(255,255,255,0.04); border-radius:8px; }
+.avatar-circle{ width:36px; height:36px; border-radius:50%; background:var(--navy); color:white; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:14px; }
+.user-info-text{ display:flex; flex-direction:column; overflow:hidden; }
+.user-info-name{ font-size:13px; font-weight:700; color:white; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.user-info-role{ font-size:11px; color:#94a3b8; }
+.theme-toggle-btn{ background:rgba(255,255,255,0.08); color:white; border:none; padding:8px; border-radius:6px; cursor:pointer; font-size:12px; font-weight:600; width:100%; display:flex; align-items:center; justify-content:center; gap:8px; }
+
+.app-main{ flex:1; margin-left:260px; display:flex; flex-direction:column; min-width:0; }
+.top-app-bar{ background:var(--card-bg); border-bottom:1px solid var(--border); padding:16px 28px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:90; }
+.mobile-hamburger{ display:none; background:none; border:none; font-size:22px; cursor:pointer; color:var(--text); }
+.page-header-title{ font-size:20px; font-weight:800; color:var(--navy); display:flex; align-items:center; gap:10px; }
+.main-content{ padding:28px; flex:1; }
+
+.kpi-row{ display:grid; grid-template-columns:repeat(auto-fit, minmax(150px,1fr)); gap:16px; margin-bottom:24px; }
+.kpi-card{ background:var(--card-bg); border:1px solid var(--border); border-radius:14px; padding:18px; box-shadow:0 4px 16px rgba(0,0,0,0.04); }
+.kpi-card h3{ font-size:11px; text-transform:uppercase; color:var(--muted); font-weight:700; letter-spacing:0.5px; margin-bottom:8px; }
+.kpi-card h2{ font-size:26px; color:var(--navy); font-weight:800; }
+
+.chart-grid{ display:grid; grid-template-columns:repeat(auto-fit, minmax(320px,1fr)); gap:20px; }
+.chart-card{ background:var(--card-bg); border:1px solid var(--border); border-radius:14px; padding:18px; box-shadow:0 4px 16px rgba(0,0,0,0.04); }
+.chart-card h3{ font-size:13px; font-weight:800; color:var(--navy); margin-bottom:14px; text-transform:uppercase; letter-spacing:0.5px; }
+.chart-card .chart-body{ min-height:210px; display:flex; flex-direction:column; justify-content:center; }
+.bar-list{ display:flex; flex-direction:column; gap:12px; width:100%; }
+.bar-row{ display:flex; align-items:center; gap:10px; font-size:12px; }
+.bar-row .dot{ width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+.bar-row .lbl{ width:110px; flex-shrink:0; color:var(--muted); font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.bar-row .track{ flex:1; background:var(--bg); border-radius:6px; height:14px; overflow:hidden; border:1px solid var(--border); }
+.bar-row .fill{ height:100%; border-radius:6px; transition:width .4s ease; min-width:2px; }
+.bar-row .val{ width:32px; text-align:right; font-weight:700; flex-shrink:0; }
+.empty-msg, .error-msg{ color:var(--muted); font-size:12px; text-align:center; padding:40px 10px; }
+.error-msg{ color:var(--danger); }
+.trend-wrap{ width:100%; }
+.trend-svg{ width:100%; height:160px; display:block; }
+.trend-labels{ display:flex; justify-content:space-between; font-size:10px; color:var(--muted); margin-top:6px; }
+
+.scope-note{ font-size:12px; color:var(--muted); margin-bottom:16px; }
+
+@media (max-width:768px){
+  .app-sidebar{ transform:translateX(-100%); }
+  .app-sidebar.sidebar-open{ transform:translateX(0); }
+  .sidebar-overlay.sidebar-open{ display:block; }
+  .app-main{ margin-left:0; }
+  .mobile-hamburger{ display:block; }
+}
+</style>
+</head>
+<body>
+
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleMobileSidebar()"></div>
+
+<aside class="app-sidebar" id="appSidebar">
+  <div class="sidebar-header">
+    <a href="dashboard.html" class="brand-title">MO<span>O</span>VING</a>
+    <span class="brand-badge">CRM</span>
+  </div>
+  <nav class="sidebar-nav">
+    <a href="dashboard.html" class="nav-item"><span class="icon">📊</span><span>Dashboard</span></a>
+    <a href="Projects.html" class="nav-item"><span class="icon">📋</span><span>Project Manager</span></a>
+    <a href="Analytics.html" class="nav-item active"><span class="icon">📈</span><span>Analytics</span></a>
+    <a href="tasks.html" class="nav-item"><span class="icon">✅</span><span>My Tasks</span></a>
+    <a href="notifications.html" class="nav-item"><span class="icon">🔔</span><span>Notifications</span><span id="sidebarNotifBadge" style="display:none;background:#dc2626;color:#fff;font-size:10px;font-weight:800;padding:1px 6px;border-radius:10px;margin-left:auto;">0</span></a>
+    <a href="admin.html" class="nav-item" id="sidebarAdminLink" style="display:none"><span class="icon">⚙️</span><span>Admin Panel</span></a>
+    <a href="my-projects.html" class="nav-item" id="sidebarMyProjectsLink" style="display:none"><span class="icon">🗂️</span><span>My Projects</span></a>
+    <a href="profile.html" class="nav-item"><span class="icon">👤</span><span>My Profile</span></a>
+    <a href="settings.html" class="nav-item"><span class="icon">🛠️</span><span>Settings</span></a>
+    <button class="nav-item" onclick="logout()" style="color:#fca5a5;"><span class="icon">🚪</span><span>Logout</span></button>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="user-profile-chip">
+      <div class="avatar-circle" id="userAvatar">U</div>
+      <div class="user-info-text">
+        <span class="user-info-name" id="userNameLabel">Loading...</span>
+        <span class="user-info-role" id="userRoleBadge">User</span>
+      </div>
+    </div>
+    <button class="theme-toggle-btn" onclick="toggleTheme()" id="themeToggleBtn">
+      <span>🌙</span> <span id="themeToggleText">Dark Theme</span>
+    </button>
+  </div>
+</aside>
+
+<div class="app-main">
+  <header class="top-app-bar">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <button class="mobile-hamburger" onclick="toggleMobileSidebar()">☰</button>
+      <h1 class="page-header-title">📈 Journey Analytics</h1>
+    </div>
+    <button onclick="manualRefreshAnalytics()" id="refreshAnalyticsBtn" style="background:var(--card-bg);color:var(--navy);border:1px solid var(--border);padding:8px 14px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;">🔄 Refresh</button>
+  </header>
+
+  <main class="main-content">
+    <div class="scope-note" id="scopeNote">Loading analytics...</div>
+
+    <div class="kpi-row">
+      <div class="kpi-card"><h3>Total Projects</h3><h2 id="kpiTotal">-</h2></div>
+      <div class="kpi-card"><h3>Pending</h3><h2 id="kpiPending">-</h2></div>
+      <div class="kpi-card"><h3>In Progress</h3><h2 id="kpiProgress">-</h2></div>
+      <div class="kpi-card"><h3>Completed</h3><h2 id="kpiComplete">-</h2></div>
+      <div class="kpi-card"><h3>Overdue</h3><h2 id="kpiOverdue">-</h2></div>
+      <div class="kpi-card"><h3>Completion %</h3><h2 id="kpiCompletionPct">-</h2></div>
+    </div>
+
+    <div class="chart-grid">
+      <div class="chart-card"><h3>Status Breakdown</h3><div class="chart-body" id="statusChart"></div></div>
+      <div class="chart-card"><h3>Priority Breakdown</h3><div class="chart-body" id="priorityChart"></div></div>
+      <div class="chart-card"><h3>Type Of Business</h3><div class="chart-body" id="businessChart"></div></div>
+      <div class="chart-card"><h3>Type Of Asset</h3><div class="chart-body" id="assetChart"></div></div>
+      <div class="chart-card"><h3>Projects By SPOC</h3><div class="chart-body" id="spocChart"></div></div>
+      <div class="chart-card"><h3>Monthly Trend (Created)</h3><div class="chart-body" id="trendChart"></div></div>
+    </div>
+  </main>
+</div>
+
+<script>
+(function(){
+  const saved = localStorage.getItem("crm-theme") || "light";
+  document.documentElement.setAttribute("data-theme", saved);
+  document.addEventListener("DOMContentLoaded", ()=>{
+    const btnText = document.getElementById("themeToggleText");
+    if(btnText) btnText.textContent = saved === "dark" ? "Light Theme" : "Dark Theme";
+  });
+})();
+function toggleTheme(){
+  const current = document.documentElement.getAttribute("data-theme");
+  const next = current === "dark" ? "light" : "dark";
+  document.documentElement.setAttribute("data-theme", next);
+  localStorage.setItem("crm-theme", next);
+  const btnText = document.getElementById("themeToggleText");
+  if(btnText) btnText.textContent = next === "dark" ? "Light Theme" : "Dark Theme";
+}
+function toggleMobileSidebar(){
+  const sidebar = document.getElementById("appSidebar");
+  const overlay = document.getElementById("sidebarOverlay");
+  if(sidebar) sidebar.classList.toggle("sidebar-open");
+  if(overlay) overlay.classList.toggle("sidebar-open");
+}
+</script>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
+import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+import { getFirestore, collection, query, where, orderBy, limit, getDocs, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+import { getUserProfile } from "./js/profile-cache.js";
+
+const firebaseConfig = {
+apiKey: "AIzaSyCSa-bvwEaFSz2MKt6AFFUe5QvbSy-7br4",
+authDomain: "anurag-kushwaha-projects.firebaseapp.com",
+projectId: "anurag-kushwaha-projects",
+storageBucket: "anurag-kushwaha-projects.firebasestorage.app",
+messagingSenderId: "745347735405",
+appId: "1:745347735405:web:7a486753dba3bd499c0464"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+window.logout = async function(){
+  signOut(auth).then(()=>{ window.location.href = "index.html"; });
+};
+
+async function ensureUserDoc(user){
+  return getUserProfile(db, user);
+}
+
+function parseLocalDate(dateStr){
+  if(!dateStr) return null;
+  const parts = dateStr.split("-");
+  if(parts.length !== 3) return null;
+  return new Date(parseInt(parts[0],10), parseInt(parts[1],10)-1, parseInt(parts[2],10));
+}
+function isOverdue(d){
+  if(!d.taskEndDate || d.taskStatus === "Complete") return false;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const end = parseLocalDate(d.taskEndDate);
+  return end ? end < today : false;
+}
+
+const CHART_COLORS = ["#1f4e79","#38bdf8","#16a34a","#d97706","#dc2626","#7c3aed","#0891b2","#be185d"];
+
+function escapeHtmlLocal(value){
+  if(value === undefined || value === null || value === "") return "Unspecified";
+  return String(value)
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;");
+}
+
+// Dependency-free horizontal bar list (used for all category breakdowns).
+// No external chart library required, so it can never fail to load.
+function renderBarList(containerId, entries){
+  const el = document.getElementById(containerId);
+  if(!el) return;
+  if(!entries || !entries.length){
+    el.innerHTML = '<div class="empty-msg">No data yet.</div>';
+    return;
+  }
+  const max = Math.max(...entries.map(e=>e.value), 1);
+  el.innerHTML = '<div class="bar-list">' + entries.map((e,i)=>{
+    const color = CHART_COLORS[i % CHART_COLORS.length];
+    const pct = Math.max(Math.round((e.value/max)*100), 2);
+    return `<div class="bar-row">
+      <span class="dot" style="background:${color}"></span>
+      <span class="lbl" title="${escapeHtmlLocal(e.label)}">${escapeHtmlLocal(e.label)}</span>
+      <span class="track"><span class="fill" style="width:${pct}%;background:${color}"></span></span>
+      <span class="val">${e.value}</span>
+    </div>`;
+  }).join('') + '</div>';
+}
+
+// Dependency-free line/trend chart drawn as inline SVG (no canvas, no library).
+function renderLineChart(containerId, labels, values){
+  const el = document.getElementById(containerId);
+  if(!el) return;
+  if(!labels || !labels.length){
+    el.innerHTML = '<div class="empty-msg">No data yet.</div>';
+    return;
+  }
+  const w = 300, h = 140;
+  const max = Math.max(...values, 1);
+  const stepX = labels.length > 1 ? w/(labels.length-1) : 0;
+  const pts = values.map((v,i)=>{
+    const x = labels.length > 1 ? i*stepX : w/2;
+    const y = h - (v/max)*(h-16) - 8;
+    return {x,y};
+  });
+  const points = pts.map(p=>`${p.x},${p.y}`).join(' ');
+  const dots = pts.map(p=>`<circle cx="${p.x}" cy="${p.y}" r="3" fill="#1f4e79"/>`).join('');
+  el.innerHTML = `
+    <div class="trend-wrap">
+      <svg class="trend-svg" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
+        <polyline points="${points}" fill="none" stroke="#38bdf8" stroke-width="2" vector-effect="non-scaling-stroke"/>
+        ${dots}
+      </svg>
+      <div class="trend-labels">${labels.map(l=>`<span>${escapeHtmlLocal(l)}</span>`).join('')}</div>
+    </div>
+  `;
+}
+
+function safeRender(fn, containerId){
+  try{
+    fn();
+  }catch(err){
+    console.error("Chart render error (" + containerId + "):", err);
+    const el = document.getElementById(containerId);
+    if(el) el.innerHTML = '<div class="error-msg">Could not render this chart.</div>';
+  }
+}
+
+function countBy(list, keyFn){
+  const map = {};
+  list.forEach(d=>{
+    const k = keyFn(d) || "Unspecified";
+    map[k] = (map[k]||0) + 1;
+  });
+  return map;
+}
+
+function toEntries(map){
+  return Object.keys(map).map(k=>({label:k, value:map[k]}));
+}
+
+function renderAll(projects){
+  const total = projects.length;
+  const pending = projects.filter(d=>d.taskStatus === "Pending").length;
+  const progress = projects.filter(d=>d.taskStatus === "In Progress").length;
+  const complete = projects.filter(d=>d.taskStatus === "Complete").length;
+  const overdue = projects.filter(isOverdue).length;
+  const completionPct = total ? Math.round((complete/total)*100) : 0;
+
+  document.getElementById("kpiTotal").innerText = total;
+  document.getElementById("kpiPending").innerText = pending;
+  document.getElementById("kpiProgress").innerText = progress;
+  document.getElementById("kpiComplete").innerText = complete;
+  document.getElementById("kpiOverdue").innerText = overdue;
+  document.getElementById("kpiCompletionPct").innerText = completionPct + "%";
+
+  safeRender(()=>renderBarList("statusChart", [
+    {label:"Pending", value:pending},
+    {label:"In Progress", value:progress},
+    {label:"Complete", value:complete}
+  ]), "statusChart");
+
+  safeRender(()=>renderBarList("priorityChart", toEntries(countBy(projects, d=>d.taskPriority))), "priorityChart");
+  safeRender(()=>renderBarList("businessChart", toEntries(countBy(projects, d=>d.business))), "businessChart");
+  safeRender(()=>renderBarList("assetChart", toEntries(countBy(projects, d=>d.assetType))), "assetChart");
+  safeRender(()=>renderBarList("spocChart", toEntries(countBy(projects, d=>d.projectSpoc))), "spocChart");
+
+  const monthMap = {};
+  projects.forEach(d=>{
+    let key = "Unknown";
+    if(d.createdAt && d.createdAt.toDate){
+      const dt = d.createdAt.toDate();
+      key = dt.toLocaleString('default',{month:'short', year:'2-digit'});
+    }else if(d.taskStartDate){
+      const dt = parseLocalDate(d.taskStartDate);
+      if(dt) key = dt.toLocaleString('default',{month:'short', year:'2-digit'});
+    }
+    monthMap[key] = (monthMap[key]||0) + 1;
+  });
+  safeRender(()=>renderLineChart("trendChart", Object.keys(monthMap), Object.values(monthMap)), "trendChart");
+}
+
+onAuthStateChanged(auth, async (user)=>{
+  if(!user){ window.location.href = "index.html"; return; }
+
+  try{
+    const userData = await ensureUserDoc(user);
+{
+const badgeEl = document.getElementById("sidebarNotifBadge");
+if(badgeEl){
+const n = userData.unreadCount || 0;
+badgeEl.style.display = n > 0 ? "inline-block" : "none";
+badgeEl.textContent = n > 99 ? "99+" : n;
+}
+}
+    if(userData.disabled === true || userData.deleted === true){
+      window.location.href = "index.html";
+      return;
+    }
+
+    const role = userData.role || "Viewer";
+    const name = userData.name || user.email;
+    if(window.mooSetUserName) window.mooSetUserName(name);
+
+    document.getElementById("userNameLabel").textContent = name;
+    document.getElementById("userRoleBadge").textContent = role;
+    document.getElementById("userAvatar").textContent = (name || "U").charAt(0).toUpperCase();
+
+    const sidebarAdminLink = document.getElementById("sidebarAdminLink");
+    if(role === "Admin" && sidebarAdminLink) sidebarAdminLink.style.display = "flex";
+    const sidebarMyProjectsLink2 = document.getElementById("sidebarMyProjectsLink");
+    if(role === "Admin" && sidebarMyProjectsLink2) sidebarMyProjectsLink2.style.display = "flex";
+
+    const scopeNoteEl = document.getElementById("scopeNote");
+
+window.currentAnalyticsRole = role;
+window.currentAnalyticsUid = user.uid;
+
+await loadAnalyticsOnce();
+
+  }catch(error){
+    console.error(error);
+    const scopeNoteEl = document.getElementById("scopeNote");
+    if(scopeNoteEl) scopeNoteEl.innerText = "Could not load analytics (" + (error.code || error.message) + ").";
+  }
+});
+
+const ANALYTICS_SAMPLE_SIZE = 500;
+
+async function loadAnalyticsOnce(){
+  const scopeNoteEl = document.getElementById("scopeNote");
+  const refreshBtn = document.getElementById("refreshAnalyticsBtn");
+  if(refreshBtn){ refreshBtn.disabled = true; refreshBtn.textContent = "⏳ Loading..."; }
+
+  try{
+    const role = window.currentAnalyticsRole;
+    const uid = window.currentAnalyticsUid;
+
+    let q;
+    if(role === "Admin"){
+      q = query(collection(db,"crmprojects"), orderBy("createdAt","desc"), limit(ANALYTICS_SAMPLE_SIZE));
+      if(scopeNoteEl) scopeNoteEl.innerText = `Showing the ${ANALYTICS_SAMPLE_SIZE} most recent projects across all users (Admin view). Not realtime — use Refresh for the latest.`;
+    }else{
+      q = query(collection(db,"crmprojects"), where("ownerUid","==",uid), orderBy("createdAt","desc"), limit(ANALYTICS_SAMPLE_SIZE));
+      if(scopeNoteEl) scopeNoteEl.innerText = "Showing your own projects only. Not realtime — use Refresh for the latest.";
+    }
+
+    const snap = await getDocs(q);
+    const projects = [];
+    snap.forEach(docSnap=>projects.push(docSnap.data()));
+
+    renderAll(projects);
+  }catch(error){
+    console.error(error);
+    if(scopeNoteEl) scopeNoteEl.innerText = "Could not load analytics (" + (error.code || error.message) + ").";
+  }finally{
+    if(refreshBtn){ refreshBtn.disabled = false; refreshBtn.textContent = "🔄 Refresh"; }
+  }
+}
+
+window.manualRefreshAnalytics = function(){
+  loadAnalyticsOnce();
+};
+</script>
+
+<script src="js/assistant-config.js"></script>
+<script src="js/assistant-widget.js"></script>
+
+</body>
+</html>
